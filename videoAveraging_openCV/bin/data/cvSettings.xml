@@ -13,12 +13,6 @@
 <N_EROSION>
     <val_0>4.555555</val_0>
 </N_EROSION>
-<MIN_BLOB_SIZE>
-    <val_0>682.666687</val_0>
-</MIN_BLOB_SIZE>
-<MAX_BLOB_SIZE>
-    <val_0>16213.333984</val_0>
-</MAX_BLOB_SIZE>
-<N_BLOBS_TO_FIND>
-    <val_0>10.000000</val_0>
-</N_BLOBS_TO_FIND>
+<N_AVERAGE>
+    <val_0>1.555555</val_0>
+</N_AVERAGE>

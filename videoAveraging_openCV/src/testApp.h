@@ -44,6 +44,7 @@ class testApp : public ofBaseApp{
     
         // using absdiff and dilation/erode to get better results
         ofxCvGrayscaleImage		videoDiffImage;
+        ofImage                 diffImage;
         
         
 };

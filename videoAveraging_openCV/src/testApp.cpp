@@ -9,10 +9,9 @@ void testApp::setup(){
     // get the width and height, and allocate color and grayscale images: 
 	width           = 320;
 	height          = 240;
-    averagingPix    = 1;                    // number to control how much the pixels are being added to eachother
     totalPixels = width * height;           // total pixels we will use later
     
-    /*
+    /* Comparing the variables from the older test program to this one
 	// declare video camera + color images + additions
     ofVideoGrabber			video;                      = vidGrabber
     ofImage                 colorBG;                    = colorBG
@@ -36,6 +35,7 @@ void testApp::setup(){
     
     grayAddition.allocate(width, height, OF_IMAGE_GRAYSCALE);       // allocate the pixels for our averaged images
     colorAddition.allocate(width, height, OF_IMAGE_COLOR);
+    diffImage.allocate(width, height, OF_IMAGE_COLOR);
 	
     videoBgImage.allocate(width, height);                           // allocate pixels for the adjusted video
 	videoDiffImage.allocate(width, height);
@@ -47,6 +47,7 @@ void testApp::setup(){
     }
     grayAddition.setFromPixels(startingPixels, width , height, OF_IMAGE_GRAYSCALE);
 	colorAddition.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
+    diffImage.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
 
 	//////////////////////////////////////////////////////////////////  
     ////////////////////////////////////////////////////////////////// GUI SETUP
@@ -66,7 +67,11 @@ void testApp::setup(){
     panel.addSlider("nDilations ", "N_DILATIONS", 2, 0, 20, true);  // dilation to make brighter
 	panel.addSlider("nErosions ", "N_EROSION", 0, 0, 20, true);     // erosion to make darker
 	
+    // number to control how much the pixels are being added to eachother
+    panel.addSlider("nAverage", "N_AVERAGE", 2, 0.25, 2.0, false);
+    
 	// vals are stored in this file in the data folder
+    // these are the defaults that load up when the program is compiled
     panel.loadSettings("cvSettings.xml");
 }
 
@@ -84,6 +89,7 @@ void testApp::update(){
 	int nDilations			= panel.getValueI("N_DILATIONS");
 	int nErosions			= panel.getValueI("N_EROSION");
 	int maxOperations		= MAX(nDilations, nErosions);
+    averagingPix            = panel.getValueF("N_AVERAGE");
 
 	video.update();
 	
@@ -102,23 +108,34 @@ void testApp::update(){
             unsigned char * backgroundPixels = videoBgImage.getPixels();
             unsigned char * grayAdditionPixels = grayAddition.getPixels();
             
-            // setting the pixels for the color images
-            unsigned char * colorBGPixels = colorBG.getPixels();
-            unsigned char * colorAdditionPixels = colorAddition.getPixels();
-            
             for (int i = 0; i < totalPixels; i++) {
                 int averageGray = ( grayAdditionPixels[i] +  backgroundPixels[i] )/averagingPix;
                 grayAdditionPixels[i] = averageGray;
                 
             }
             
+            // setting the pixels for the color images
+            unsigned char * colorBGPixels = colorBG.getPixels();
+            unsigned char * colorAdditionPixels = colorAddition.getPixels();
+            
+            // setting the pixels for the diffImage
+            unsigned char * diffImagePixels = colorBG.getPixels();
+            unsigned char * notDiffImgPixels = colorAddition.getPixels();
+            unsigned char * vidDiffImagePixels = videoDiffImage.getPixels();
+            
             for (int i = 0; i < totalPixels * 3; i++) {
                 int averageColor = ( colorAdditionPixels[i] + colorBGPixels[i] )/averagingPix;
                 colorAdditionPixels[i] = averageColor;
+                if ( vidDiffImagePixels[i/3] == 255 ) {
+                    diffImagePixels[i];
+                } else {
+                    diffImagePixels[i] = notDiffImgPixels[i];
+                }   
             }
             
             grayAddition.setFromPixels(grayAdditionPixels, width , height, OF_IMAGE_GRAYSCALE);
             colorAddition.setFromPixels(colorAdditionPixels, width, height, OF_IMAGE_COLOR);
+            diffImage.setFromPixels(diffImagePixels, width, height, OF_IMAGE_COLOR);
             
 			panel.setValueB("B_LEARN_BG", false);
 		}
@@ -154,6 +171,7 @@ void testApp::draw(){
     
     // third column, difference
     videoDiffImage.draw(700, 20, 320, 240);     // difference video
+    diffImage.draw(700, 280);
 	
 	panel.draw();
 
