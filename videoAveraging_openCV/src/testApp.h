@@ -36,11 +36,14 @@ class testApp : public ofBaseApp{
 		void mouseReleased(int x, int y, int button);
 		void windowResized(int w, int h);
 		
-		// create a variable of the type ofImage
+        // control panel
 		ofxControlPanel			panel;
 	
-		int						width, height;
-		ofVideoGrabber			video;
+        int						width, height;  // cam w x h
+		
+        // declare video camera
+        ofVideoGrabber			video;
+        
 		ofxCvColorImage			videoColorCvImage;
 		ofxCvGrayscaleImage		videoGrayscaleCvImage;
 		ofxCvGrayscaleImage		videoBgImage;

@@ -7,47 +7,56 @@ bool notFountThisFrame(tracker t){
 
 //--------------------------------------------------------------
 void testApp::setup(){
+    
+    // get the width and height, and allocate color and grayscale images: 
+	width = 320;
+	height = 240;
 
 	// setup video grabber:
-	//video.loadMovie("Swarm_EindhovenTest_Watec_two-visitors.mov");
-	//video.play();
-	video.initGrabber(320, 240);
+	video.initGrabber(width, height);
 	
-	
-	// get the width and height, and allocate color and grayscale images: 
-	width = video.width; 
-	height = video.height;
-	
-	videoColorCvImage.allocate(width, height);
+	// allocate the pixels for the grayscale + color video
+    videoColorCvImage.allocate(width, height);
 	videoGrayscaleCvImage.allocate(width, height);
-	videoBgImage.allocate(width, height);
+	
+    // allocate pixels for the adjusted video
+    videoBgImage.allocate(width, height);
 	videoDiffImage.allocate(width, height);
 	
 	// set background color to be white: 
 	ofBackground(255, 255, 255);
 
-	panel.setup("cv settings", 720, 0, 300, 748);
+	// setup the main panel for the GUI
+    panel.setup("cv settings", 1024, 0, 276, 800);
 	panel.addPanel("control", 1, false);
 	
 	panel.setWhichPanel("control");
 	panel.setWhichColumn(0);
-	panel.addToggle("learn background ", "B_LEARN_BG", true);
+	
+    // toggle to turn on bg
+    panel.addToggle("learn background ", "B_LEARN_BG", true);
 	panel.addSlider("threshold ", "THRESHOLD", 127, 0, 255, true);
 	
-	panel.addSlider("nDilations ", "N_DILATIONS", 2, 0, 20, true);
-	panel.addSlider("nErosions ", "N_EROSION", 0, 0, 20, true);
+	// slider for dilations and erosions
+    panel.addSlider("nDilations ", "N_DILATIONS", 2, 0, 20, true);  // dilation to make brighter
+	panel.addSlider("nErosions ", "N_EROSION", 0, 0, 20, true);     // erosion to make darker
 	
-	panel.addSlider("minBlobSize ", "MIN_BLOB_SIZE", 50, 0, width*height*0.2f, true);
+	// Adding panels for BLOB finders, I will probably get rid of this
+    panel.addSlider("minBlobSize ", "MIN_BLOB_SIZE", 50, 0, width*height*0.2f, true);
 	panel.addSlider("maxBlobSize ", "MAX_BLOB_SIZE", 20000, 0, width*height*0.5f, true);
 	panel.addSlider("nBlobs to find ", "N_BLOBS_TO_FIND", 10, 0, 15, true);
 	
-	panel.loadSettings("cvSettings.xml");
+	// vals are stored in this file in the data folder
+    panel.loadSettings("cvSettings.xml");
 	
-	idCount = 0;
+	idCount = 0;    // for the trackers
 }
 
 //--------------------------------------------------------------
 void testApp::update(){
+    
+    // set background color
+    ofBackground(100,100,100);
 		
 	panel.update();
 	
@@ -187,11 +196,19 @@ void testApp::update(){
 void testApp::draw(){
 	
 	ofSetColor(255, 255, 255);
-	videoGrayscaleCvImage.draw(20,20, 320,240);
-	videoBgImage.draw(320+40, 20, 320, 240);
-	videoDiffImage.draw(20,240+40, 640,480);
+    
+    // draw first column of images, color
+    video.draw(20, 20);
 	
-	contourFinder.draw(20,240+40,640,480);
+    
+    // second column, grayscale
+    videoGrayscaleCvImage.draw(360, 20, 320, 240);
+	videoBgImage.draw(360, 280, 320, 240);
+	
+    
+    videoDiffImage.draw(700, 20, 320, 240);
+	
+	//contourFinder.draw(20,240+40,640,480);
 	
 	/*for (int i = 0; i < contourFinder.nBlobs; i++){
 		ofDrawBitmapString("blob id:" + ofToString(i), contourFinder.blobs[i].centroid.x, contourFinder.blobs[i].centroid.y);
