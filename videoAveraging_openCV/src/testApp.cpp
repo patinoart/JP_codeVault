@@ -3,25 +3,55 @@
 //--------------------------------------------------------------
 void testApp::setup(){
     
+    //grabBackground is now bLearnBg
+    numClicks = 0;                          // how many times have you captured the background
+    
     // get the width and height, and allocate color and grayscale images: 
-	width = 320;
-	height = 240;
-
-	// setup video grabber:
-	video.initGrabber(width, height);
+	width           = 320;
+	height          = 240;
+    averagingPix    = 1;                    // number to control how much the pixels are being added to eachother
+    totalPixels = width * height;           // total pixels we will use later
+    
+    /*
+	// declare video camera + color images + additions
+    ofVideoGrabber			video;                      = vidGrabber
+    ofImage                 colorBG;                    = colorBG
+    ofImage                 colorAddition;              = colorAddition
+    
+    // our grayscale images + additions
+    ofxCvGrayscaleImage		videoGrayscaleCvImage;      = grayFrame
+    ofxCvGrayscaleImage		videoBgImage;               = background
+    ofImage                 grayAddition;               = grayAddition
+    
+    // using absdiff and dilation/erode to get better results
+    ofxCvGrayscaleImage		videoDiffImage;
+    */
+    
+    // setup video grabber:
+	video.setVerbose(true);
+    video.initGrabber(width, height);
 	
-	// allocate the pixels for the grayscale + color video
-    videoColorCvImage.allocate(width, height);
+    videoColorCvImage.allocate(width, height);                      // allocate pixels for the BW + RGB vid
 	videoGrayscaleCvImage.allocate(width, height);
+    
+    grayAddition.allocate(width, height, OF_IMAGE_GRAYSCALE);       // allocate the pixels for our averaged images
+    colorAddition.allocate(width, height, OF_IMAGE_COLOR);
 	
-    // allocate pixels for the adjusted video
-    videoBgImage.allocate(width, height);
+    videoBgImage.allocate(width, height);                           // allocate pixels for the adjusted video
 	videoDiffImage.allocate(width, height);
-	
-	// set background color to be white: 
-	ofBackground(255, 255, 255);
+    
+    unsigned char * startingPixels = video.getPixels();             // we start by having the average starting with base pixels
+    
+    for (int i = 0; i < totalPixels; i++) {
+        startingPixels[i] = 0;
+    }
+    grayAddition.setFromPixels(startingPixels, width , height, OF_IMAGE_GRAYSCALE);
+	colorAddition.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
 
-	// setup the main panel for the GUI
+	//////////////////////////////////////////////////////////////////  
+    ////////////////////////////////////////////////////////////////// GUI SETUP
+    //////////////////////////////////////////////////////////////////
+    // setup the main panel for the GUI
     panel.setup("cv settings", 1024, 0, 276, 800);
 	panel.addPanel("control", 1, false);
 	
@@ -64,6 +94,32 @@ void testApp::update(){
 		
 		if ( bLearnBg ){ 
 			videoBgImage = videoGrayscaleCvImage;
+            colorBG.setFromPixels( video.getPixelsRef() );
+            
+            // use a forloop to run through the two pixel sets and add them together
+            
+            // setting the pixels for the grayscale images
+            unsigned char * backgroundPixels = videoBgImage.getPixels();
+            unsigned char * grayAdditionPixels = grayAddition.getPixels();
+            
+            // setting the pixels for the color images
+            unsigned char * colorBGPixels = colorBG.getPixels();
+            unsigned char * colorAdditionPixels = colorAddition.getPixels();
+            
+            for (int i = 0; i < totalPixels; i++) {
+                int averageGray = ( grayAdditionPixels[i] +  backgroundPixels[i] )/averagingPix;
+                grayAdditionPixels[i] = averageGray;
+                
+            }
+            
+            for (int i = 0; i < totalPixels * 3; i++) {
+                int averageColor = ( colorAdditionPixels[i] + colorBGPixels[i] )/averagingPix;
+                colorAdditionPixels[i] = averageColor;
+            }
+            
+            grayAddition.setFromPixels(grayAdditionPixels, width , height, OF_IMAGE_GRAYSCALE);
+            colorAddition.setFromPixels(colorAdditionPixels, width, height, OF_IMAGE_COLOR);
+            
 			panel.setValueB("B_LEARN_BG", false);
 		}
 		
@@ -87,15 +143,17 @@ void testApp::draw(){
 	ofSetColor(255, 255, 255);
     
     // draw first column of images, color
-    video.draw(20, 20);
-	
+    video.draw(20, 20);                         // color video
+    colorBG.draw(20, 280);                      // still image of our color video capture
+    colorAddition.draw(20, 540);                // averaged image based on color image
     
     // second column, grayscale
-    videoGrayscaleCvImage.draw(360, 20, 320, 240);
-	videoBgImage.draw(360, 280, 320, 240);
-	
+    videoGrayscaleCvImage.draw(360, 20, 320, 240);  // grayscale video
+	videoBgImage.draw(360, 280, 320, 240);          // still image of grayscale video capture
+    grayAddition.draw(360, 540);                    // averaged image based on grayscale image
+    
     // third column, difference
-    videoDiffImage.draw(700, 20, 320, 240);	
+    videoDiffImage.draw(700, 20, 320, 240);     // difference video
 	
 	panel.draw();
 

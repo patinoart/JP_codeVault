@@ -26,14 +26,26 @@ class testApp : public ofBaseApp{
 		ofxControlPanel			panel;
 	
         int						width, height;  // cam w x h
-		
-        // declare video camera
+        int                     totalPixels;    // pixels w * h
+        int                     numClicks;      // counter to number captured images
+        float                   averagingPix;   // number we average pixels with
+        
+        // declare video camera + color images +  additions
         ofVideoGrabber			video;
+        ofImage                 colorBG;
+        ofImage                 colorAddition;
         
 		ofxCvColorImage			videoColorCvImage;
-		ofxCvGrayscaleImage		videoGrayscaleCvImage;
+		
+        // our grayscale images + additions
+        ofxCvGrayscaleImage		videoGrayscaleCvImage;
 		ofxCvGrayscaleImage		videoBgImage;
-		ofxCvGrayscaleImage		videoDiffImage;
+        ofImage                 grayAddition;
+    
+        // using absdiff and dilation/erode to get better results
+        ofxCvGrayscaleImage		videoDiffImage;
+        
+        
 };
 
 #endif
