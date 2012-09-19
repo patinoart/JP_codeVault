@@ -7,20 +7,6 @@
 #include "ofxControlPanel.h"
 
 
-typedef struct {
-	
-	ofPoint		pos;
-	int			nFramesActive;
-	bool		bFoundThisFrame;
-	int			whoThisFrame;
-	int			id;
-	
-	ofPoint		posSmooth;
-	vector <ofPoint> trail;
-	
-} tracker;
-
-
 class testApp : public ofBaseApp{
 
 	public:
@@ -48,16 +34,6 @@ class testApp : public ofBaseApp{
 		ofxCvGrayscaleImage		videoGrayscaleCvImage;
 		ofxCvGrayscaleImage		videoBgImage;
 		ofxCvGrayscaleImage		videoDiffImage;
-	
-		ofxCvContourFinder		contourFinder;
-		
-	
-		// this will store all trackers...
-		vector < tracker >		trackerObjects;
-		int						idCount;
-	
-	
-	
 };
 
 #endif
