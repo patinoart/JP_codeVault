@@ -190,6 +190,8 @@ void testApp::keyPressed(int key){
     if (key == 'b' ){
 		panel.setValueB("B_LEARN_BG", true);
         bLearnBg = panel.getValueB("B_LEARN_BG");
+        diffImage.saveImage("testImage_" + ofToString(numClicks) + ".png");
+        numClicks++; 
 	} else if (key == ' '){	
 		bDrawDiagnostic = !bDrawDiagnostic;
     }
