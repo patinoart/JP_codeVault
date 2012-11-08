@@ -6,6 +6,8 @@
 #include "ofxOpenCv.h"
 #include "ofxControlPanel.h"
 
+#define NUM_BYTES 4
+
 
 class testApp : public ofBaseApp{
 
@@ -52,21 +54,26 @@ class testApp : public ofBaseApp{
         // using absdiff and dilation/erode to get better results
         ofxCvGrayscaleImage		videoDiffImage;
         ofImage                 diffImage;
+        ofImage                 imgStckTotal;
+    
+        vector < ofImage >      imageStack;
     
         /////////////////////////////////////////////////////////
         // Arduino Variables from serialExample
         /////////////////////////////////////////////////////////
         
-        ofTrueTypeFont		font;
+        int xVal;
+        bool bTrigger;
         
-        bool		bSendSerialMessage;			// a flag for sending serial
-        char		bytesRead[3];				// data from serial, we will be trying to read 3
-        char		bytesReadString[4];			// a string needs a null terminator, so we need 3 + 1 bytes
-        int			nBytesRead;					// how much did we read?
-        int			nTimesRead;					// how many times did we read?
-        float		readTime;					// when did we last read?				
+        bool bSendSerialMessage; // a flag for sending serial
+        // this will be used to count the number of frames
+        // that have passed since the last time the app reads from the serial port
         
-        ofSerial	serial;
+        //data from serial, we will be reading 4 bytes, two bytes for each integer
+        unsigned char bytesRead[NUM_BYTES];
+        int countCycles;
+        
+        ofSerial serial;
         
         
 };

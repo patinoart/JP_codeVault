@@ -11,21 +11,6 @@ void testApp::setup(){
 	height          = 240*3;
     totalPixels = width * height;           // total pixels we will use later
     
-    /* Comparing the variables from the older test program to this one
-	// declare video camera + color images + additions
-    ofVideoGrabber			video;                      = vidGrabber
-    ofImage                 colorBG;                    = colorBG
-    ofImage                 colorAddition;              = colorAddition
-    
-    // our grayscale images + additions
-    ofxCvGrayscaleImage		videoGrayscaleCvImage;      = grayFrame
-    ofxCvGrayscaleImage		videoBgImage;               = background
-    ofImage                 grayAddition;               = grayAddition
-    
-    // using absdiff and dilation/erode to get better results
-    ofxCvGrayscaleImage		videoDiffImage;
-    */
-    
     // setup video grabber:
 	video.setVerbose(true);
     video.initGrabber(width, height);
@@ -48,6 +33,14 @@ void testApp::setup(){
     grayAddition.setFromPixels(startingPixels, width , height, OF_IMAGE_GRAYSCALE);
 	colorAddition.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
     diffImage.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
+    
+    for (int i = 0; imageStack.size(); i++) {
+        imageStack[i].allocate(width, height, OF_IMAGE_COLOR);
+        imageStack[i].setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
+    }
+    
+    imgStckTotal.allocate(width, height, OF_IMAGE_COLOR);
+    imgStckTotal.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
     
     bDrawDiagnostic = true;
 
@@ -80,29 +73,13 @@ void testApp::setup(){
     ////////////////////////////////////////////////////////////////// ARDUINO SETUP
     //////////////////////////////////////////////////////////////////
     
-    ofSetVerticalSync(true);
-	
-	bSendSerialMessage = false;
-	ofBackground(255);	
-	ofSetLogLevel(OF_LOG_VERBOSE);
-	
-	font.loadFont("DIN.otf", 64);
-	
-	serial.listDevices();
-	vector <ofSerialDeviceInfo> deviceList = serial.getDeviceList();
-	
-	// this should be set to whatever com port your serial device is connected to.
-	// (ie, COM4 on a pc, /dev/tty.... on linux, /dev/tty... on a mac)
-	// arduino users check in arduino app....		
-	serial.setup(5, 9600); //open the first device
-	//serial.setup("COM4"); // windows example
-	//serial.setup("/dev/tty.usbserial-A4001JEC",9600); // mac osx example
-	//serial.setup("/dev/ttyUSB0", 9600); //linux example
-	
-	nTimesRead = 0;
-	nBytesRead = 0;
-	readTime = 0;
-	memset(bytesReadString, 0, 4);
+    countCycles = 0; // start our count at 0
+    bSendSerialMessage = true; // send a message right away
+    // serial.enumerateDevices(); // uncomment this line to see all your devices
+    serial.setup(5, 9600);
+    
+    // The shutter bool
+    bTrigger = false;
 }
 
 //--------------------------------------------------------------
@@ -167,6 +144,9 @@ void testApp::update(){
             colorAddition.setFromPixels(colorAdditionPixels, width, height, OF_IMAGE_COLOR);
             diffImage.setFromPixels(diffImagePixels, width, height, OF_IMAGE_COLOR);
             
+            //setting pixels for the imageStack
+            imageStack.push_back(diffImage);
+            
 			panel.setValueB("B_LEARN_BG", false);
 		}
 		
@@ -188,37 +168,50 @@ void testApp::update(){
     //////////////////////////////////////////////////////////////////
     
     if (bSendSerialMessage){
-		
-		// (1) write the letter "a" to serial:
-		serial.writeByte('a');
-		
-		// (2) read
-		// now we try to read 3 bytes
-		// since we might not get them all the time 3 - but sometimes 0, 6, or something else,
-		// we will try to read three bytes, as much as we can
-		// otherwise, we may have a "lag" if we don't read fast enough
-		// or just read three every time. now, we will be sure to 
-		// read as much as we can in groups of three...
-		
-		nTimesRead = 0;
-		nBytesRead = 0;
-		int nRead  = 0;  // a temp variable to keep count per read
-		
-		unsigned char bytesReturned[3];
-		
-		memset(bytesReadString, 0, 4);
-		memset(bytesReturned, 0, 3);
-		
-		while( (nRead = serial.readBytes( bytesReturned, 3)) > 0){
-			nTimesRead++;	
-			nBytesRead = nRead;
-		};
-		
-		memcpy(bytesReadString, bytesReturned, 3);
-		
-		bSendSerialMessage = false;
-		readTime = ofGetElapsedTimef();
-	}
+        // send a handshake to the Arduino serial
+        serial.writeByte('x');
+        // make sure there's something to write all the data to
+        unsigned char bytesReturned[NUM_BYTES];
+        memset(bytesReturned, 0, NUM_BYTES);
+        
+        // keep reading bytes, until there's none left to read
+        while( serial.readBytes(bytesReturned, NUM_BYTES) > 0){}
+        // wait a few cycles before asking again
+        bSendSerialMessage = false;
+        
+        // make our integers from the individual bytes
+        xVal = bytesReturned[0];
+        xVal <<= 1;
+        xVal += bytesReturned[1];
+        xVal <<= 1;
+        xVal += bytesReturned[2];
+        xVal <<= 1;
+        xVal += bytesReturned[3];
+        
+        cout << xVal << endl;
+        
+        if (xVal > 0) {
+            bTrigger = true;
+        } else {
+            bTrigger = false;
+        }
+        
+        // get ready to wait a few frames before asking again
+        bSendSerialMessage = false;
+    }
+    
+    countCycles++;
+    if(countCycles == 5) {
+        bSendSerialMessage = true;
+        countCycles = 0;
+    }
+    
+    if (bTrigger == true) {
+        panel.setValueB("B_LEARN_BG", true);
+        bLearnBg = panel.getValueB("B_LEARN_BG");
+        diffImage.saveImage("testImage_" + ofToString(numClicks) + ".png");
+        numClicks++;
+    }
 }
 
 //--------------------------------------------------------------
@@ -241,6 +234,7 @@ void testApp::draw(){
         // third column, difference
         videoDiffImage.draw(700, 20, width/3, height/3);     // difference video
         diffImage.draw(700, 280, width/3, height/3);
+        //imageStack.draw
     } else {
         diffImage.draw(20, 20, width, height);
     }
@@ -251,19 +245,13 @@ void testApp::draw(){
     ////////////////////////////////////////////////////////////////// ARDUINO DRAW
     //////////////////////////////////////////////////////////////////
     
-    if (nBytesRead > 0 && ((ofGetElapsedTimef() - readTime) < 0.5f)){
-		ofSetColor(0);
-	} else {
-		ofSetColor(220);
-	}
-	stringstream msg;
+    stringstream msg;
     
     msg
-	<< "click to test serial:\n" << endl
-	<< "nBytes read " + ofToString(nBytesRead) << endl
-	<< "nTimes read " + ofToString(nTimesRead) << endl
-	<< "read: " + ofToString(bytesReadString) << endl
-	<< "at time " + ofToString(readTime, 3) << endl;
+    << "NumClicks: " << ofToString(numClicks) << endl
+    << "xVal: " << ofToString(xVal) << endl
+    << "Trigger: " << bTrigger << endl;
+    
     
     ofDrawBitmapString(msg.str(), 1054, 315);
     

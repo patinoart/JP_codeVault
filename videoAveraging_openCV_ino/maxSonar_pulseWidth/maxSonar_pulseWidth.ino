@@ -9,6 +9,9 @@
 const int pwPin = 7; 
 //variables needed to store values
 long pulse, inches, cm;
+
+int minDist = 50;
+
 void setup() {
   //This opens up a serial connection to shoot the results back to the PC console
   Serial.begin(9600);
@@ -21,17 +24,17 @@ void loop() {
   pulse = pulseIn(pwPin, HIGH);
   //147uS per inch
   inches = pulse/147;
-  //change inches to centimetres 
+  //change inches to centimetres
   cm = inches * 2.54;
   
-  if (inches < 10) {
-    Serial.println(inches);
-    
-    //Serial.print("in, ");
-    //Serial.print(cm);
-    //Serial.print("cm");
-    //Serial.println();
-
+  if (inches < minDist) {
+  
+  Serial.print(inches);
+//  Serial.print("in, ");
+//  Serial.print(cm);
+//  Serial.print("cm");
+  Serial.println();
+  delay(1000);
+  
   }
-  delay(100);
 }
