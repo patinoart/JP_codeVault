@@ -38,7 +38,11 @@ class testApp : public ofBaseApp{
         int                     totalPixels;    // pixels w * h
         int                     numClicks;      // counter to number captured images
         float                   averagingPix;   // number we average pixels with
-        
+    
+        float                   triggerTimer;
+        int                     interval;
+
+    
         // declare video camera + color images +  additions
         ofVideoGrabber			video;
         ofImage                 colorBG;
@@ -54,10 +58,7 @@ class testApp : public ofBaseApp{
         // using absdiff and dilation/erode to get better results
         ofxCvGrayscaleImage		videoDiffImage;
         ofImage                 diffImage;
-        ofImage                 imgStckTotal;
-    
-        vector < ofImage >      imageStack;
-    
+            
         /////////////////////////////////////////////////////////
         // Arduino Variables from serialExample
         /////////////////////////////////////////////////////////

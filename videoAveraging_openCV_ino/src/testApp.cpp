@@ -34,14 +34,6 @@ void testApp::setup(){
 	colorAddition.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
     diffImage.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
     
-    for (int i = 0; imageStack.size(); i++) {
-        imageStack[i].allocate(width, height, OF_IMAGE_COLOR);
-        imageStack[i].setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
-    }
-    
-    imgStckTotal.allocate(width, height, OF_IMAGE_COLOR);
-    imgStckTotal.setFromPixels(startingPixels, width, height, OF_IMAGE_COLOR);
-    
     bDrawDiagnostic = true;
 
 	//////////////////////////////////////////////////////////////////  
@@ -76,6 +68,7 @@ void testApp::setup(){
     countCycles = 0; // start our count at 0
     bSendSerialMessage = true; // send a message right away
     // serial.enumerateDevices(); // uncomment this line to see all your devices
+    // already set up for the Arduino
     serial.setup(5, 9600);
     
     // The shutter bool
@@ -86,7 +79,7 @@ void testApp::setup(){
 void testApp::update(){
     
     // set background color
-    ofBackground(100,100,100);
+    ofBackground(0,0,0);
 		
 	panel.update();
 	
@@ -144,9 +137,6 @@ void testApp::update(){
             colorAddition.setFromPixels(colorAdditionPixels, width, height, OF_IMAGE_COLOR);
             diffImage.setFromPixels(diffImagePixels, width, height, OF_IMAGE_COLOR);
             
-            //setting pixels for the imageStack
-            imageStack.push_back(diffImage);
-            
 			panel.setValueB("B_LEARN_BG", false);
 		}
 		
@@ -163,9 +153,9 @@ void testApp::update(){
 		}
 	}
     
-    //////////////////////////////////////////////////////////////////  
+    ////////////////////////////////////////////////////////////////// BEGIN 
     ////////////////////////////////////////////////////////////////// ARDUINO UPDATE
-    //////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////// (IF NOT WORKING COMMENT OUT)
     
     if (bSendSerialMessage){
         // send a handshake to the Arduino serial
@@ -206,12 +196,38 @@ void testApp::update(){
         countCycles = 0;
     }
     
+    ////////////////////////////////////////////////////////////////// END
+    ////////////////////////////////////////////////////////////////// ARDUINO UPDATE
+    ////////////////////////////////////////////////////////////////// (IF NOT WORKING COMMENT OUT)
+    
+    
+    ////////////////////////////////////////////////////////////////// BEGIN
+    ////////////////////////////////////////////////////////////////// BACKUP TRIGGER
+    ////////////////////////////////////////////////////////////////// (IF ARDUINO IS NOT WORKING)
+    
+    //triggerTimer = ofGetElapsedTimef();
+    
+    //interval = (int) triggerTimer % 10;
+    
+    //if (interval == 0) {
+        
+    //    bTrigger = true;
+    //}
+    
+    ////////////////////////////////////////////////////////////////// END
+    ////////////////////////////////////////////////////////////////// BACKUP TRIGGER
+    ////////////////////////////////////////////////////////////////// (IF ARDUINO IS NOT WORKING)
+    
+    
+    // bTrigger to capture background and save image
+    // images are saved to bin -> data folder
     if (bTrigger == true) {
         panel.setValueB("B_LEARN_BG", true);
         bLearnBg = panel.getValueB("B_LEARN_BG");
         diffImage.saveImage("testImage_" + ofToString(numClicks) + ".png");
         numClicks++;
     }
+    
 }
 
 //--------------------------------------------------------------
@@ -221,6 +237,9 @@ void testApp::draw(){
     
     
     if (bDrawDiagnostic == true){
+        
+        ofSetRectMode(OF_RECTMODE_CORNER);
+        
         // draw first column of images, color
         video.draw(20, 20, width/3, height/3);                         // color video
         colorBG.draw(20, 280, width/3, height/3);                      // still image of our color video capture
@@ -234,52 +253,55 @@ void testApp::draw(){
         // third column, difference
         videoDiffImage.draw(700, 20, width/3, height/3);     // difference video
         diffImage.draw(700, 280, width/3, height/3);
-        //imageStack.draw
+
+        
+        panel.draw();
+        
+        //////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////// ARDUINO DRAW
+        //////////////////////////////////////////////////////////////////
+        
+        stringstream msg;
+        
+        msg
+        << "NumClicks: " << ofToString(numClicks) << endl
+        << "xVal: " << ofToString(xVal) << endl
+        << "Trigger: " << bTrigger << endl
+        << "Timer: " << triggerTimer << endl
+        << "Interval: " << interval << endl;
+        
+        ofDrawBitmapString(msg.str(), 1054, 315);
+        
+        
     } else {
-        diffImage.draw(20, 20, width, height);
+        
+        ofSetRectMode(OF_RECTMODE_CENTER);
+        diffImage.draw(ofGetWidth()/2, ofGetHeight()/2, width, height);
+    
     }
 	
-	panel.draw();
+	
     
-    //////////////////////////////////////////////////////////////////  
-    ////////////////////////////////////////////////////////////////// ARDUINO DRAW
-    //////////////////////////////////////////////////////////////////
-    
-    stringstream msg;
-    
-    msg
-    << "NumClicks: " << ofToString(numClicks) << endl
-    << "xVal: " << ofToString(xVal) << endl
-    << "Trigger: " << bTrigger << endl;
-    
-    
-    ofDrawBitmapString(msg.str(), 1054, 315);
-    
-//  stringstream msg;
-//	
-//	msg
-//	<< "  Framerate: " << fps << endl
-//	<< "Tracking(t): " << statusSkeleton << endl
-//	<< "       User: " << UserIdOscV << endl
-//	//<< "  Body Dist: " << bodyDist << endl
-//	<< "      q+/a-: " << stringMaxPV << endl
-//	<< "      w+/e-: " << stringMaxPF << endl
-//	<< "      1+/2-: " << stringPartSize << endl;
-//	
-//	ofDrawBitmapString(msg.str(), 10, 20);
-
 }
 
 //--------------------------------------------------------------
 void testApp::keyPressed(int key){
     
+    // key Pressed is the same as capturing the background and saving an image
+    
     if (key == 'b' ){
-		panel.setValueB("B_LEARN_BG", true);
+		
+        panel.setValueB("B_LEARN_BG", true);
         bLearnBg = panel.getValueB("B_LEARN_BG");
+        
+        // images are saved to bin -> data folder
         diffImage.saveImage("testImage_" + ofToString(numClicks) + ".png");
         numClicks++; 
-	} else if (key == ' '){	
-		bDrawDiagnostic = !bDrawDiagnostic;
+	
+    } else if (key == ' '){
+	
+        bDrawDiagnostic = !bDrawDiagnostic;
+    
     }
 
 }
